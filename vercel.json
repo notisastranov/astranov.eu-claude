@@ -1,18 +1,4 @@
 {
-  "rewrites": [
-    { "source": "/grok",             "destination": "/labs/grok/index.html" },
-    { "source": "/grok/",            "destination": "/labs/grok/index.html" },
-    { "source": "/grok/:path*",      "destination": "/labs/grok/:path*" },
-    { "source": "/chatgpt",          "destination": "/labs/chatgpt/index.html" },
-    { "source": "/chatgpt/",         "destination": "/labs/chatgpt/index.html" },
-    { "source": "/chatgpt/:path*",   "destination": "/labs/chatgpt/:path*" },
-    { "source": "/gemini",           "destination": "/labs/gemini/index.html" },
-    { "source": "/gemini/",          "destination": "/labs/gemini/index.html" },
-    { "source": "/gemini/:path*",    "destination": "/labs/gemini/:path*" },
-    { "source": "/deepseek",         "destination": "/labs/deepseek/index.html" },
-    { "source": "/deepseek/",        "destination": "/labs/deepseek/index.html" },
-    { "source": "/deepseek/:path*",  "destination": "/labs/deepseek/:path*" }
-  ],
   "headers": [
     {
       "source": "/(.*)",
