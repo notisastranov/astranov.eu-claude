@@ -1,0 +1,53 @@
+name: Supabase Deploy
+
+on:
+  push:
+    branches: [main, claude/build-astranov-app-DHkQw]
+    paths:
+      - 'supabase/**'
+      - '.github/workflows/supabase-deploy.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: supabase-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: kzlabcrlrpbnfiiyrjvl
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Link project
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF"
+
+      - name: Push database migrations
+        run: supabase db push --include-all
+
+      - name: Deploy Edge Functions
+        run: |
+          supabase functions deploy ai-router --no-verify-jwt
+          supabase functions deploy astranov-api --no-verify-jwt
+
+      - name: Set Edge Function secrets
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GH_PUSH_TOKEN: ${{ secrets.GH_PUSH_TOKEN }}
+        run: |
+          supabase secrets set \
+            ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY" \
+            OPENAI_API_KEY="$OPENAI_API_KEY" \
+            GROQ_API_KEY="$GROQ_API_KEY" \
+            GITHUB_TOKEN="$GH_PUSH_TOKEN" \
+            GITHUB_REPO=notisastranov/Astranov \
+            GITHUB_BRANCH=claude/build-astranov-app-DHkQw

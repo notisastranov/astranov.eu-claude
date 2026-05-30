@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>AstranoV — Privacy Policy</title>
+<style>
+  body { background: #02060d; color: #dde9ff; font: 15px/1.65 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif; margin: 0; padding: 32px 16px 80px; }
+  .wrap { max-width: 760px; margin: 0 auto; }
+  h1, h2 { color: #cfe1ff; font-weight: 700; letter-spacing: 0.01em; }
+  h1 { font-size: 28px; margin-bottom: 4px; }
+  h2 { font-size: 17px; margin-top: 28px; }
+  .sub { color: #7a98c0; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 24px; }
+  a { color: #7eebb4; }
+  code { background: rgba(120,180,255,0.10); padding: 2px 6px; border-radius: 4px; font-size: 13px; }
+  .back { display: inline-block; margin-top: 32px; color: #7eb4ff; text-decoration: none; }
+  ul { padding-left: 22px; }
+  li { margin: 4px 0; }
+</style>
+</head><body><div class="wrap">
+
+<h1>Privacy Policy</h1>
+<div class="sub">AstranoV — last updated 2026-05-25</div>
+
+<p>This page describes how AstranoV processes personal data. We are a European
+operation; this policy is written to satisfy the EU General Data Protection
+Regulation (GDPR) and equivalent regimes elsewhere.</p>
+
+<h2>1. Data controller</h2>
+<p><b>Notis Astranov</b>, individual data controller. Contact:
+<a href="mailto:notisastranov@gmail.com">notisastranov@gmail.com</a>.
+Postal address available on request for verified data-subject requests.</p>
+
+<h2>2. What we process</h2>
+<ul>
+  <li><b>Account data</b>: email, display name, optional avatar URL. Lawful basis: contract (Art. 6(1)(b)) — needed to provide the service to you.</li>
+  <li><b>Activity data</b>: signals you post, comments, reactions, follows, deliveries you request or fulfil. Lawful basis: contract.</li>
+  <li><b>Location data</b>: only when you explicitly tap "Locate" or grant geolocation permission. Lawful basis: consent (Art. 6(1)(a)).</li>
+  <li><b>Payment data</b>: payments are processed by Stripe, Revolut, or PayPal (independent controllers). We see <i>only</i> the payment status, amount, currency, and the provider's order id; we never receive card numbers. Lawful basis: contract.</li>
+  <li><b>Tamper / security telemetry</b>: when the Anonymous Service detects copy / save / devtools events, we log the event kind, IP, user-agent, language, screen resolution, and a 4-character preview of any copied text. Lawful basis: legitimate interest (Art. 6(1)(f)) — protecting our intellectual property and preventing abuse.</li>
+  <li><b>Camera snapshots</b>: only after the user explicitly accepts the anti-fraud camera-verification prompt. Browsers cannot capture the camera silently. Lawful basis: explicit consent.</li>
+  <li><b>Compute contributions</b>: if you opt in to donate cycles, we record the cycles donated, duration, and your user agent. Lawful basis: consent (opt-in).</li>
+</ul>
+
+<h2>3. What we do NOT process</h2>
+<ul>
+  <li>Your filesystem, installed apps, or other apps' data. A browser cannot reach those even if asked.</li>
+  <li>Your card / bank details. Those go directly to Stripe / Revolut / PayPal under their own privacy policies.</li>
+  <li>Your private memories (those flagged <code>is_private = true</code> in our database) never reach any AI engine.</li>
+</ul>
+
+<h2>4. Third parties (processors)</h2>
+<p>The following sub-processors run parts of the system on our behalf. Each has a public privacy policy you should review:</p>
+<ul>
+  <li><b>Supabase Inc.</b> — auth, database, edge functions, storage.</li>
+  <li><b>Vercel Inc.</b> — static hosting + CDN.</li>
+  <li><b>Stripe Payments Europe</b>, <b>Revolut Ltd.</b>, <b>PayPal (Europe) S.à r.l.</b> — payment processing (independent controllers).</li>
+  <li><b>Anthropic PBC</b>, <b>OpenRouter</b>, <b>Groq Inc.</b>, <b>Google (Gemini)</b> — AI inference for the Astranov assistant, the Anonymous Service, and the developer channel. Public, non-private messages may be sent for inference.</li>
+  <li><b>NASA EOSDIS</b>, <b>OpenStreetMap</b>, <b>CARTO</b>, <b>Esri</b> — map / imagery tiles (no personal data sent).</li>
+  <li><b>BBC, The Guardian, Al Jazeera, Deutsche Welle</b> — public RSS feeds (no personal data sent).</li>
+</ul>
+
+<h2>5. Retention</h2>
+<ul>
+  <li>Account data: while your account exists; deleted within 30 days of account deletion.</li>
+  <li>Signals + comments: retained until deleted by the author or the soft-delete policy purges them.</li>
+  <li>Tamper telemetry: 12 months, then automatic purge.</li>
+  <li>Payment records: 7 years (legal accounting obligation).</li>
+  <li>Compute contributions: while the AVC ledger needs them for payout reconciliation; anonymised aggregates may be kept indefinitely.</li>
+</ul>
+
+<h2>6. International transfers</h2>
+<p>Some processors operate outside the EEA (e.g. Anthropic in the US). Transfers happen under Standard Contractual Clauses or each processor's adequacy certification.</p>
+
+<h2>7. Your rights (GDPR Art. 15-22)</h2>
+<ul>
+  <li>Access — request a copy of the data we hold about you.</li>
+  <li>Rectification — correct inaccurate data.</li>
+  <li>Erasure — delete your account and associated data.</li>
+  <li>Portability — receive your data in a machine-readable format.</li>
+  <li>Restriction / objection — limit or object to processing based on legitimate interest.</li>
+  <li>Withdraw consent — for location, camera, compute donation, and AI memory storage.</li>
+</ul>
+<p>To exercise any right, email <a href="mailto:notisastranov@gmail.com">notisastranov@gmail.com</a>. Requests honoured within 30 days.</p>
+
+<h2>8. Cookies / local storage</h2>
+<p>AstranoV uses <code>localStorage</code> for strictly-necessary functional state: your auth session, language, brightness, voice volume, depth focus, informants list, and (only if you opt in) your compute-donation flag. No tracking cookies. No third-party analytics.</p>
+
+<h2>9. Krypteia + the Anonymous Service</h2>
+<p>The Anonymous Service (visible to all users) analyses your browser fingerprint to advise you on your own device's privacy. It serves <i>justful use</i>: it will not assist actions that harm others. Owner-only deeper tools (Krypteia) operate under perpetual authorization granted by the data controller; they handle IP defence + audit telemetry only.</p>
+
+<h2>10. Complaints</h2>
+<p>If we have not resolved a concern to your satisfaction, you may lodge a complaint with your local data protection authority. For users in Greece, the supervisory authority is the <i>Hellenic Data Protection Authority</i> (<a href="https://www.dpa.gr/" rel="noopener" target="_blank">dpa.gr</a>).</p>
+
+<a class="back" href="/">← Return to AstranoV</a>
+
+</div></body></html>

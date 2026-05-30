@@ -1,0 +1,22 @@
+project_id = "lkoatrkhuigdolnjsbie"
+
+[functions.ai-router]
+verify_jwt = false
+
+[functions.astranov-api]
+verify_jwt = false
+
+[functions.debug-reader]
+verify_jwt = false
+
+[functions.debug-write]
+verify_jwt = false
+
+[functions.vendor-crawler]
+verify_jwt = false
+
+[functions.order-intake]
+verify_jwt = false
+
+[functions.order-status]
+verify_jwt = false
