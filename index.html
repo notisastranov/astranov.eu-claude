@@ -5,9 +5,9 @@ ASTRANOV — INVENTION DECLARATION & PROVENANCE
 ================================================================================
 The world's first Agentic Orbital Operating System (AOOS).
 Invented and owned by Notis Astranov · notisastranov@gmail.com
-Canonical repository: https://github.com/notisastranov/astranov.eu-grok
-Canonical deployment: https://grok.astranov.eu
-Variant: Grok-locked UI — same Supabase backend as astranov.eu
+Canonical repository: https://github.com/notisastranov/astranov.eu-claude
+Canonical deployment: https://astranov.eu/claude
+Variant: Claude-locked UI — same Supabase backend as astranov.eu
 Repository genesis: 2025  ·  First public AOOS deployment: 2026
 
 The git commit history of this repository is the cryptographic time-stamp
@@ -1098,7 +1098,7 @@ Single-file by design. Any AI/human can continue from this comment + the law.
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="AstranoV" />
 <meta name="mobile-web-app-capable" content="yes" />
-<title>AstranoV · Grok — The Global Operating System</title>
+<title>AstranoV · Claude — The Global Operating System</title>
 <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.119/Build/Cesium/Widgets/widgets.css" />
 <style>
   /* ============================================================
@@ -1696,21 +1696,21 @@ Single-file by design. Any AI/human can continue from this comment + the law.
     cursor: pointer;
   }
   #aicycle-float .ring { position: absolute; inset: 0; border-radius: 50%; z-index: 1;
-                     border: 1.5px solid rgba(255, 140, 60, 0.5);
-                     background: rgba(20, 8, 2, 0.32); backdrop-filter: blur(8px);
+                     border: 1.5px solid rgba(212, 165, 116, 0.45);
+                     background: rgba(22, 10, 4, 0.28); backdrop-filter: blur(8px);
                      -webkit-backdrop-filter: blur(8px);
                      transition: border-color 0.3s; }
   #aicycle-float.thinking .ring { animation: ring-pulse 1.2s ease-in-out infinite; }
   @keyframes ring-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(255, 140, 60, 0.4); }
-    50%      { box-shadow: 0 0 0 12px rgba(255, 140, 60, 0); }
+    0%, 100% { box-shadow: 0 0 0 0 rgba(212, 165, 116, 0.4); }
+    50%      { box-shadow: 0 0 0 12px rgba(212, 165, 116, 0); }
   }
   #aicycle-float .node { position: relative; z-index: 2; width: 12px; height: 12px; border-radius: 50%;
-                     background: #ff8844; box-shadow: 0 0 16px rgba(255, 140, 60, 1);
+                     background: #d4a574; box-shadow: 0 0 16px rgba(212, 165, 116, 1);
                      transition: background 0.2s; }
   #aicycle-float .provider {
     position: absolute; z-index: 2; bottom: -18px; left: 50%; transform: translateX(-50%);
-    font-size: 9px; letter-spacing: 0.15em; color: rgba(255, 200, 160, 0.7);
+    font-size: 9px; letter-spacing: 0.15em; color: rgba(212, 180, 140, 0.7);
     text-transform: uppercase; white-space: nowrap; pointer-events: none;
   }
 
@@ -1725,28 +1725,28 @@ Single-file by design. Any AI/human can continue from this comment + the law.
     display: flex; flex-direction: column; align-items: center;
     font-family: 'Bahnschrift', 'DIN Alternate', 'Eurostile', 'Arial Narrow', system-ui, sans-serif;
     font-weight: 800; font-size: 17px; letter-spacing: 0.42em; text-indent: 0.42em;
-    color: #ffe0c8; -webkit-user-select: none; user-select: none; line-height: 1;
-    background: linear-gradient(180deg, rgba(40,18,8,0.72), rgba(20,8,2,0.72));
-    border: 1.5px solid rgba(255,120,40,0.85);
+    color: #ffe4cc; -webkit-user-select: none; user-select: none; line-height: 1;
+    background: linear-gradient(180deg, rgba(42,22,8,0.72), rgba(22,10,4,0.72));
+    border: 1.5px solid rgba(212,165,116,0.85);
     box-shadow:
-      0 0 10px rgba(255,100,20,0.75), 0 0 22px rgba(255,100,20,0.45),
-      inset 0 0 12px rgba(255,140,60,0.35);
+      0 0 10px rgba(212,165,116,0.65), 0 0 22px rgba(180,120,60,0.4),
+      inset 0 0 12px rgba(212,165,116,0.3);
     text-shadow:
-      0 0 6px rgba(255,160,80,0.95), 0 0 14px rgba(255,100,20,0.85),
-      0 0 28px rgba(255,80,10,0.6);
+      0 0 6px rgba(230,190,140,0.9), 0 0 14px rgba(212,165,116,0.8),
+      0 0 28px rgba(180,120,60,0.5);
     backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
     animation: appname-pulse 3.4s ease-in-out infinite;
     transition: transform 0.12s;
   }
   #app-name:active { transform: translateX(-50%) scale(0.94); }
   @keyframes appname-pulse {
-    0%,100% { box-shadow: 0 0 10px rgba(255,100,20,0.7), 0 0 22px rgba(255,100,20,0.4), inset 0 0 12px rgba(255,140,60,0.3); }
-    50%     { box-shadow: 0 0 16px rgba(255,130,40,1), 0 0 34px rgba(255,100,20,0.7), inset 0 0 16px rgba(255,160,80,0.5); }
+    0%,100% { box-shadow: 0 0 10px rgba(212,165,116,0.6), 0 0 22px rgba(180,120,60,0.35), inset 0 0 12px rgba(212,165,116,0.25); }
+    50%     { box-shadow: 0 0 16px rgba(230,190,140,0.9), 0 0 34px rgba(212,165,116,0.6), inset 0 0 16px rgba(230,190,140,0.4); }
   }
   #app-name .app-tag {
     display: block; font-size: 6px; font-weight: 600; letter-spacing: 0.34em;
-    text-indent: 0.34em; color: rgba(255,180,120,0.8); margin-top: 3px;
-    text-shadow: 0 0 6px rgba(255,100,20,0.7);
+    text-indent: 0.34em; color: rgba(212,180,140,0.8); margin-top: 3px;
+    text-shadow: 0 0 6px rgba(180,120,60,0.7);
   }
   #app-name.healing { animation: none; border-color: #7eebb4; color: #d6f7e6;
     box-shadow: 0 0 18px rgba(126,235,180,0.9), inset 0 0 16px rgba(126,235,180,0.5); }
@@ -2075,9 +2075,9 @@ Single-file by design. Any AI/human can continue from this comment + the law.
     animation: mic-pulse 1s ease-in-out infinite;
   }
   @keyframes mic-pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.4); } }
-  /* Speaking state — Astranov's ring glows orange while it talks */
+  /* Speaking state — Astranov's ring glows amber while it talks */
   #aicycle-float.speaking .node {
-    background: #ff9944; box-shadow: 0 0 18px rgba(255, 153, 68, 0.95);
+    background: #d4a574; box-shadow: 0 0 18px rgba(212, 165, 116, 0.95);
     animation: mic-pulse 0.7s ease-in-out infinite;
   }
 
@@ -3055,7 +3055,7 @@ Single-file by design. Any AI/human can continue from this comment + the law.
 <div id="cesiumContainer"></div>
 
 <!-- APP NAME — always-present anchor (§1b). Tap = diagnostic + hard refresh. -->
-<div id="app-name" onclick="appNameReload()" title="AstranoV · Grok — The Global Operating System · tap to heal & reload">ASTRANOV<span class="app-tag">POWERED BY GROK</span></div>
+<div id="app-name" onclick="appNameReload()" title="AstranoV · Claude — The Global Operating System · tap to heal & reload">ASTRANOV<span class="app-tag">POWERED BY CLAUDE</span></div>
 
 <!-- Me spotlight — a line from the on-screen Me orb to the user's location. -->
 <svg id="me-spotlight"><line id="me-spot-line" x1="0" y1="0" x2="0" y2="0"></line></svg>
@@ -3082,7 +3082,7 @@ Single-file by design. Any AI/human can continue from this comment + the law.
   <canvas class="gfx-canvas" id="gfx-ai" width="64" height="64"></canvas>
   <div class="ring"></div>
   <div class="node"></div>
-  <div class="provider" id="aicycle-provider">GRK</div>
+  <div class="provider" id="aicycle-provider">CLD</div>
 </div>
 
 <!-- Transient UI -->
@@ -10062,10 +10062,10 @@ const aicycleHistory = [];
 // the brain is using and opens the engine console (stats + connections).
 // Talking to Astranov is the apex ◈ orb's job, not the ring's.
 $('aicycle-float').addEventListener('click', () => { openAICycleConsole(); });
-setTimeout(() => { try { _setEngineIndicator('xai'); } catch (_) {} }, 500);
+setTimeout(() => { try { _setEngineIndicator('anthropic'); } catch (_) {} }, 500);
 
-const ENGINE_SHORT = { anthropic: 'ANT', openrouter: 'OR', groq: 'GRQ', gemini: 'GEM',
-  deepseek: 'DS', mistral: 'MST', xai: 'GRK', together: 'TGT', perplexity: 'PPX', astranov: 'AV' };
+const ENGINE_SHORT = { anthropic: 'CLD', openrouter: 'OR', groq: 'GRQ', gemini: 'GEM',
+  deepseek: 'DS', mistral: 'MST', xai: 'XAI', together: 'TGT', perplexity: 'PPX', astranov: 'AV' };
 function _setEngineIndicator(engine) {
   const el = $('aicycle-provider');
   if (!el) return;
@@ -10114,8 +10114,8 @@ async function openAICycleConsole() {
   const lockChips = d.engines.filter(e => e.connected).map(e => dialChip(e.key, e.label, 'lock')).join('');
 
   host.innerHTML = `
-    <div class="me-sec">Grok variant — engine locked to xAI</div>
-    <div style="font-size:12px;color:#ff8844;margin:4px 0 10px;letter-spacing:0.04em">This instance routes all AI turns through xAI Grok. Visit <a href="https://astranov.eu" style="color:#7eb4ff">astranov.eu</a> for the full multi-engine brain.</div>
+    <div class="me-sec">Claude variant — engine locked to Anthropic</div>
+    <div style="font-size:12px;color:#d4a574;margin:4px 0 10px;letter-spacing:0.04em">This instance routes all AI turns through Anthropic Claude. Visit <a href="https://astranov.eu" style="color:#7eb4ff">astranov.eu</a> for the full multi-engine brain.</div>
     <div class="me-sec">Connected engines — the brain reaches outside AIs through itself</div>
     ${d.engines.map(engineRow).join('')}
     <div class="me-sec">Usage · ${d.totalCalls} total turns</div>
@@ -10127,11 +10127,11 @@ async function openAICycleConsole() {
 
 // The user's chosen cycle mode: 'astranov' (auto), 'all' (escalate), or an
 // engine key (lock). Persisted; sent to /aicycle on every turn.
-window._aiEngine = 'xai';
+window._aiEngine = 'anthropic';
 window.setAIEngine = function (key) {
-  window._aiEngine = 'xai';
-  try { _setEngineIndicator('xai'); } catch (_) {}
-  try { toast('Grok variant — engine locked to xAI', 'ok'); } catch (_) {}
+  window._aiEngine = 'anthropic';
+  try { _setEngineIndicator('anthropic'); } catch (_) {}
+  try { toast('Claude variant — engine locked to Anthropic', 'ok'); } catch (_) {}
 };
 
 function openAstranov() {

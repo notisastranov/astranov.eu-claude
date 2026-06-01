@@ -1,7 +1,7 @@
 {
-  "name": "AstranoV · Grok — The Global Operating System",
-  "short_name": "AstranoV Grok",
-  "description": "The Global Operating System powered by Grok. Research, social, and a delivery marketplace — one OS, one currency, one collective intelligence, every device.",
+  "name": "AstranoV · Claude — The Global Operating System",
+  "short_name": "AstranoV Claude",
+  "description": "The Global Operating System powered by Claude. Research, social, and a delivery marketplace — one OS, one currency, one collective intelligence, every device.",
   "id": "/",
   "start_url": "/?source=pwa",
   "scope": "/",
