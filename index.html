@@ -259,6 +259,25 @@
     transform: translateX(-50%); font-size: 9px; letter-spacing: 0.22em; color: rgba(207,226,255,0.7); }
   #pilot-orb:active { transform: scale(0.92); cursor: grabbing; }
 
+  /* DRONE PILOT — §31. Amber swarm orb, bottom-right. Tap = open the
+     drone command panel. Pulses brighter when 300 drones are airborne. */
+  #drone-orb { position: fixed; right: 16px;
+    bottom: calc(var(--orb-bottom, 80px) + 76px + env(safe-area-inset-bottom));
+    z-index: 250; width: 54px; height: 54px; border-radius: 50%;
+    cursor: grab; display: flex; align-items: center; justify-content: center;
+    touch-action: none; color: #fff; font-size: 22px; font-weight: 700;
+    background: radial-gradient(circle at 35% 35%, #ffd47e 0%, #ffaa33 38%, #6e3a00 75%, #02060d 100%);
+    border: 2px solid rgba(255,212,126,0.65);
+    box-shadow: 0 0 14px rgba(255,170,51,0.55), inset -6px -10px 18px rgba(0,0,0,0.45);
+    transition: transform 0.18s var(--ease), bottom 0.32s var(--ease); }
+  #drone-orb.dragged { transition: none; animation: none; }
+  #drone-orb:active { transform: scale(0.92); cursor: grabbing; }
+  #drone-orb.live { animation: pulse 1.1s ease-in-out infinite;
+    box-shadow: 0 0 22px rgba(255,170,51,0.85), inset -6px -10px 18px rgba(0,0,0,0.45); }
+  #drone-orb::after { content: 'DRONES'; position: absolute; left: 50%; bottom: -14px;
+    transform: translateX(-50%); font-size: 9px; letter-spacing: 0.22em; color: rgba(255,212,126,0.85); white-space: nowrap; }
+  #drone-orb.live::after { content: attr(data-state); color: var(--gold); }
+
   /* PANEL */
   #panel { position: fixed; left: 0; right: 0; bottom: 0; z-index: 70;
     max-height: 75vh; overflow-y: auto; padding: 0 18px calc(28px + env(safe-area-inset-bottom));
@@ -402,6 +421,7 @@ Architect: Notis Astranov. Pre-nuke tag: pre-nuke-2026-06-11-1200.
 <div id="listen-orb" title="Tap to mute / unmute the listener">◉</div>
 <div id="interim-bubble"></div>
 <div id="pilot-orb" title="Back to the globe" onclick="pilotHome()"></div>
+<div id="drone-orb" title="Drone Pilot — 300 drones" onclick="openDronePanel()" data-state="DRONES">✦</div>
 
 <div id="chat">
   <div id="chat-handle"></div>
@@ -3407,6 +3427,306 @@ async function vendorMenuRemove(vendorId, idx) {
   } catch (e) { toast(e.message, 'err'); }
 }
 
+/* ============================== Drone Pilot — Defender game (LAW §31) ==============================
+   The architect's order: a Drone Pilot orb that commands 300 drones to
+   defend the player from waves of enemy drones. Every action feeds
+   analytics_events so §19 usage_stats sees what users actually do —
+   the game generates the signal the brain uses to improve the app.
+   Solo first; multiplayer team mode hooks via Realtime in a later cycle.
+============================================================================ */
+const DRONE = {
+  on: false, N: 300,
+  fleet: [],            // friendly drones — orbit + attack
+  foes: [],             // enemy drones — always attack player
+  player: null,         // { lat, lng, hp, entity, name }
+  entities: [],         // every Cesium handle this game owns (for cleanup)
+  cmd: 'patrol',
+  score: 0, wave: 0, tickId: 0, spawnId: 0, ts0: 0,
+};
+const _DRONE_TICK_MS = 80;
+const _DRONE_WAVE_MS = 18_000;
+const _DRONE_COMBAT_KM = 0.10;        // 100 m kill radius
+const _DRONE_PLAYER_KM = 0.12;        // foe-on-player radius
+
+function _droneRand(a, b) { return a + Math.random() * (b - a); }
+function _dronePos(lat, lng, altKm) {
+  return Cesium.Cartesian3.fromDegrees(lng, lat, (altKm || 0) * 1000);
+}
+function _droneDistKm(a, b) {
+  const R = 6371, d2r = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * d2r, dLng = (b.lng - a.lng) * d2r;
+  const x = Math.sin(dLat/2)**2 + Math.cos(a.lat*d2r) * Math.cos(b.lat*d2r) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(x)));
+}
+function _droneLatKmStep(km) { return km / 111; }
+function _droneLngKmStep(km, lat) { return km / (111 * Math.max(0.0001, Math.cos(lat * Math.PI / 180))); }
+
+// Single best-effort analytics writer — RLS allows anon insert; failures stay silent.
+async function _track(event, props) {
+  try {
+    if (!sb) return;
+    const sid = (() => { try { return localStorage.getItem('astranov.sid') || ''; } catch (_) { return ''; } })();
+    await sb.from('analytics_events').insert({
+      event, props: { ...(props || {}), uid: session?.user?.id || null },
+      session_id: sid,
+    });
+  } catch (_) { /* telemetry never fails the game */ }
+}
+
+function dronesStart(n) {
+  if (DRONE.on) return openDronePanel();
+  if (!viewer) { toast('Globe not ready', 'err'); return; }
+  if (_userLat == null) { toast('Drone game needs your GPS — tap home / globe first', 'err'); return; }
+  DRONE.on = true; DRONE.N = Math.max(20, Math.min(500, n || 300));
+  DRONE.player = { lat: _userLat, lng: _userLng, hp: 100, entity: null,
+                   name: (profile?.display_name) || 'You' };
+  DRONE.fleet = []; DRONE.foes = []; DRONE.score = 0; DRONE.wave = 0; DRONE.cmd = 'patrol';
+  DRONE.ts0 = Date.now();
+  // Spawn friendly swarm in a ring around the player.
+  for (let i = 0; i < DRONE.N; i++) {
+    const ang = (i / DRONE.N) * Math.PI * 2 + Math.random() * 0.3;
+    const orbitR = _droneRand(2.0, 4.5);
+    DRONE.fleet.push({
+      id: 'f' + i, team: 'friend', role: 'patrol',
+      lat: DRONE.player.lat + _droneLatKmStep(orbitR) * Math.cos(ang),
+      lng: DRONE.player.lng + _droneLngKmStep(orbitR, DRONE.player.lat) * Math.sin(ang),
+      altKm: _droneRand(0.5, 1.6),
+      angle: ang, orbitR, entity: null, hp: 1,
+    });
+  }
+  _droneRenderPlayer();
+  for (const d of DRONE.fleet) _droneRenderDrone(d, true);
+  // Fly camera to a useful tactical altitude.
+  viewer.camera.flyTo({
+    destination: _dronePos(DRONE.player.lat, DRONE.player.lng, 25),
+    orientation: { heading: 0, pitch: Cesium.Math.toRadians(-70), roll: 0 },
+    duration: 1.4,
+  });
+  // Live HUD on the orb.
+  const orb = document.getElementById('drone-orb');
+  if (orb) { orb.classList.add('live'); orb.dataset.state = '300 · WAVE 0'; }
+  // Tick + enemy spawn schedules.
+  clearInterval(DRONE.tickId);  DRONE.tickId  = setInterval(_droneTick, _DRONE_TICK_MS);
+  clearInterval(DRONE.spawnId); DRONE.spawnId = setInterval(_droneSpawnWave, _DRONE_WAVE_MS);
+  setTimeout(_droneSpawnWave, 2200);  // first wave shortly after start
+  _track('drone_game_start', { n: DRONE.N, mode: 'solo' });
+  openDronePanel();
+}
+
+function dronesStop(reason) {
+  if (!DRONE.on) { _droneCleanup(); return; }
+  clearInterval(DRONE.tickId);  DRONE.tickId  = 0;
+  clearInterval(DRONE.spawnId); DRONE.spawnId = 0;
+  const dur = Date.now() - DRONE.ts0;
+  _track('drone_game_end', { reason: reason || 'manual', score: DRONE.score,
+                             wave: DRONE.wave, durationMs: dur });
+  _droneCleanup();
+  const orb = document.getElementById('drone-orb');
+  if (orb) { orb.classList.remove('live'); orb.dataset.state = 'DRONES'; }
+  DRONE.on = false;
+  _droneRefreshPanel();
+}
+
+function _droneCleanup() {
+  if (viewer) for (const e of DRONE.entities) { try { viewer.entities.remove(e); } catch (_) {} }
+  DRONE.entities = []; DRONE.fleet = []; DRONE.foes = []; DRONE.player = null;
+}
+
+function _droneRenderPlayer() {
+  const p = DRONE.player;
+  p.entity = viewer.entities.add({
+    position: new Cesium.CallbackProperty(() => _dronePos(p.lat, p.lng, 0.05), false),
+    point: {
+      pixelSize: new Cesium.CallbackProperty(() => 16 + 5 * (0.5 + 0.5 * Math.sin(Date.now()/280)), false),
+      color: Cesium.Color.fromCssColorString('#7eebb4'),
+      outlineColor: Cesium.Color.fromCssColorString('#7eebb4').withAlpha(0.45),
+      outlineWidth: 5,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+    label: {
+      text: new Cesium.CallbackProperty(() => '◈ ' + p.name + ' · HP ' + Math.max(0, Math.round(p.hp)), false),
+      font: '600 12px Inter, sans-serif',
+      fillColor: Cesium.Color.fromCssColorString('#7eebb4'),
+      outlineColor: Cesium.Color.fromCssColorString('#020a1c'), outlineWidth: 2,
+      style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+      pixelOffset: new Cesium.Cartesian2(0, -24),
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+  });
+  DRONE.entities.push(p.entity);
+}
+
+function _droneRenderDrone(d, friend) {
+  const color  = friend ? '#ffaa33' : '#d96e6e';
+  const outline= friend ? '#ffd47e' : '#ff9b9b';
+  d.entity = viewer.entities.add({
+    position: new Cesium.CallbackProperty(() => _dronePos(d.lat, d.lng, d.altKm), false),
+    point: {
+      pixelSize: 5,
+      color: Cesium.Color.fromCssColorString(color),
+      outlineColor: Cesium.Color.fromCssColorString(outline).withAlpha(0.5),
+      outlineWidth: 1,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+    },
+  });
+  DRONE.entities.push(d.entity);
+}
+
+function _droneSpawnWave() {
+  if (!DRONE.on) return;
+  DRONE.wave++;
+  const n = Math.min(20 + DRONE.wave * 6, 90);
+  const startAng = Math.random() * Math.PI * 2;
+  const startDistKm = 12 + Math.random() * 6;
+  const lat0 = DRONE.player.lat, lng0 = DRONE.player.lng;
+  for (let i = 0; i < n; i++) {
+    const a = startAng + (i / n - 0.5) * 0.55;
+    const f = {
+      id: 'e' + DRONE.wave + '_' + i, team: 'foe', role: 'attack',
+      lat: lat0 + _droneLatKmStep(startDistKm) * Math.cos(a),
+      lng: lng0 + _droneLngKmStep(startDistKm, lat0) * Math.sin(a),
+      altKm: _droneRand(0.4, 1.8),
+      entity: null, hp: 1,
+    };
+    DRONE.foes.push(f);
+    _droneRenderDrone(f, false);
+  }
+  _track('drone_game_wave', { wave: DRONE.wave, n });
+  toast('Wave ' + DRONE.wave + ' — ' + n + ' enemies inbound', 'err');
+  const orb = document.getElementById('drone-orb');
+  if (orb) orb.dataset.state = DRONE.fleet.length + ' · WAVE ' + DRONE.wave;
+  _droneRefreshPanel();
+}
+
+function _droneNearest(from, pool) {
+  let best = null, bestD = Infinity;
+  for (const o of pool) {
+    if (!o.entity) continue;
+    const x = _droneDistKm(from, o);
+    if (x < bestD) { best = o; bestD = x; }
+  }
+  return best;
+}
+
+function _droneTick() {
+  if (!DRONE.on || !DRONE.player) return;
+  // 1) Move friendly drones according to command.
+  for (const d of DRONE.fleet) {
+    if (!d.entity) continue;
+    if (d.role === 'patrol') {
+      d.angle += 0.022;
+      d.lat = DRONE.player.lat + _droneLatKmStep(d.orbitR) * Math.cos(d.angle);
+      d.lng = DRONE.player.lng + _droneLngKmStep(d.orbitR, DRONE.player.lat) * Math.sin(d.angle);
+    } else if (d.role === 'attack') {
+      const target = _droneNearest(d, DRONE.foes);
+      if (target) {
+        const bLat = target.lat - d.lat, bLng = target.lng - d.lng;
+        const len = Math.hypot(bLat, bLng) || 1;
+        const step = _droneLatKmStep(0.5);  // ~0.5 km/tick = ~6 km/s
+        d.lat += (bLat / len) * step;
+        d.lng += (bLng / len) * step;
+      } else {
+        // No foes — drift back to patrol orbit
+        d.role = 'patrol';
+      }
+    }
+  }
+  // 2) Move foes toward nearest friendly drone, fall through to player.
+  for (const f of DRONE.foes) {
+    if (!f.entity) continue;
+    const target = _droneNearest(f, DRONE.fleet) || DRONE.player;
+    const bLat = target.lat - f.lat, bLng = target.lng - f.lng;
+    const len = Math.hypot(bLat, bLng) || 1;
+    const step = _droneLatKmStep(0.4);
+    f.lat += (bLat / len) * step;
+    f.lng += (bLng / len) * step;
+  }
+  // 3) Collisions — friendly vs foe (both die).
+  for (const f of DRONE.foes) {
+    if (!f.entity) continue;
+    for (const d of DRONE.fleet) {
+      if (!d.entity) continue;
+      if (_droneDistKm(d, f) < _DRONE_COMBAT_KM) {
+        try { viewer.entities.remove(d.entity); } catch (_) {}
+        try { viewer.entities.remove(f.entity); } catch (_) {}
+        d.entity = null; f.entity = null;
+        DRONE.score++;
+        break;
+      }
+    }
+  }
+  // 4) Foe-on-player damage.
+  for (const f of DRONE.foes) {
+    if (!f.entity) continue;
+    if (_droneDistKm(f, DRONE.player) < _DRONE_PLAYER_KM) {
+      DRONE.player.hp -= 5;
+      try { viewer.entities.remove(f.entity); } catch (_) {}
+      f.entity = null;
+    }
+  }
+  // 5) Compact arrays.
+  DRONE.fleet = DRONE.fleet.filter(d => d.entity);
+  DRONE.foes  = DRONE.foes.filter(f => f.entity);
+  const orb = document.getElementById('drone-orb');
+  if (orb) orb.dataset.state = DRONE.fleet.length + ' · WAVE ' + DRONE.wave;
+  // 6) End checks.
+  if (DRONE.player.hp <= 0) {
+    toast('You fell. Score ' + DRONE.score + ', wave ' + DRONE.wave, 'err');
+    dronesStop('player_dead');
+    return;
+  }
+  if (DRONE.fleet.length === 0 && DRONE.wave >= 2) {
+    toast('Swarm lost. Score ' + DRONE.score, 'err');
+    dronesStop('fleet_lost');
+    return;
+  }
+  _droneRefreshPanel();
+}
+
+function dronesCommand(mode) {
+  if (!DRONE.on) return;
+  if (!['patrol', 'attack'].includes(mode)) return;
+  DRONE.cmd = mode;
+  for (const d of DRONE.fleet) d.role = mode;
+  _track('drone_game_command', { mode });
+  toast('Drones: ' + mode.toUpperCase(), 'ok');
+  _droneRefreshPanel();
+}
+
+function openDronePanel() {
+  openPanel(`
+    <h2>Drone Pilot</h2>
+    <p style="color:var(--bone);opacity:0.85">Command a swarm of 300 drones. Defend your player from waves of enemy drones. Every action improves the app — your play is the signal §19 reads.</p>
+    <div id="drone-hud" style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:14px 0;text-align:center">
+      <div><div style="font-size:10px;letter-spacing:0.18em;color:var(--bone);opacity:0.65">HP</div><div id="drone-hp" style="font-size:22px;font-weight:700;color:var(--emerald);font-variant-numeric:tabular-nums">${Math.max(0, Math.round(DRONE.player?.hp || 0))}</div></div>
+      <div><div style="font-size:10px;letter-spacing:0.18em;color:var(--bone);opacity:0.65">SWARM</div><div id="drone-n" style="font-size:22px;font-weight:700;color:var(--amber);font-variant-numeric:tabular-nums">${DRONE.fleet.length}</div></div>
+      <div><div style="font-size:10px;letter-spacing:0.18em;color:var(--bone);opacity:0.65">FOES</div><div id="drone-f" style="font-size:22px;font-weight:700;color:var(--crimson);font-variant-numeric:tabular-nums">${DRONE.foes.length}</div></div>
+      <div><div style="font-size:10px;letter-spacing:0.18em;color:var(--bone);opacity:0.65">SCORE / WAVE</div><div id="drone-sw" style="font-size:18px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums">${DRONE.score} · ${DRONE.wave}</div></div>
+    </div>
+    ${DRONE.on ? `
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="pbtn ok"     onclick="dronesCommand('patrol')">◯ Patrol (orbit me)</button>
+        <button class="pbtn"        onclick="dronesCommand('attack')">✦ Attack (hunt foes)</button>
+        <button class="pbtn danger" onclick="dronesStop('manual')">✕ End game</button>
+      </div>
+      <p style="font-size:11px;color:rgba(168,200,238,0.55);margin-top:10px">PATROL — drones orbit you, intercept what reaches them. ATTACK — drones hunt enemies aggressively. Enemy waves every 18 s, larger each round.</p>
+    ` : `
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="pbtn ok" onclick="dronesStart(300)">▶ Start with 300 drones</button>
+        <button class="pbtn"    onclick="dronesStart(100)">100 drones (lighter)</button>
+      </div>
+      <p style="font-size:11px;color:rgba(168,200,238,0.55);margin-top:10px">Solo mode: defend yourself from increasing waves. Telemetry feeds <code>analytics_events</code> → §19 <code>usage_stats</code> so the brain reads how you play and improves the app from that signal.</p>
+    `}
+  `);
+}
+
+function _droneRefreshPanel() {
+  const h = document.getElementById('drone-hp');  if (h && DRONE.player) h.textContent = Math.max(0, Math.round(DRONE.player.hp));
+  const n = document.getElementById('drone-n');   if (n) n.textContent = DRONE.fleet.length;
+  const f = document.getElementById('drone-f');   if (f) f.textContent = DRONE.foes.length;
+  const s = document.getElementById('drone-sw');  if (s) s.textContent = DRONE.score + ' · ' + DRONE.wave;
+}
+
 /* ============================== Driver — architect only (LAW §11) ============================== */
 async function openDriverPanel() {
   if (!session) return openAuthPanel();
@@ -4332,6 +4652,8 @@ function routeLocal(raw) {
   if (/\b(crawl|sweep|grow|populate|σάρωσ)\b/.test(t))                              { _routedFire('Brain steering the crawler…', () => brainCrawl(raw)); return true; }
   if (/\b(develop|roadmap|queue|build next|ανάπτυξη)\b/.test(t))                    { _routedFire('Opening the development queue.', openDevelopPanel); return true; }
   if (/\b(stellar|sextant|navigation|αστερισμ|ναυτιλ)\b/.test(t))                   { _routedFire('Stellar navigation — summoned.', openStellarPanel); return true; }
+  // §31 — Drone Pilot defender game.
+  if (/\b(drones?|swarm|pilot drones|defend|σμήνος|σμηνος|πιλότος)\b/i.test(t))     { _routedFire('Drone Pilot — summoned.', openDronePanel); return true; }
   // §17 — explicit memory commands. 'remember X' stamps a high-importance
   // fact; 'forget me' wipes everything Astranov knows about the user.
   const remM = raw.match(/^\s*(?:remember|θυμήσου|θυμησου)\s*[:,\-]?\s*(.{4,})$/i);
@@ -4503,6 +4825,7 @@ window.addEventListener('load', () => {
   _bindOrbDrag($('login-orb'),  'astranov.orb.login');
   _bindOrbDrag($('listen-orb'), 'astranov.orb.listen');
   _bindOrbDrag($('pilot-orb'),  'astranov.orb.pilot');
+  _bindOrbDrag($('drone-orb'),  'astranov.orb.drone');
   $('listen-orb').addEventListener('click', micToggle);
   // Always-on recognition starts ~1.5 s after boot (after permissions
   // are warmed). If the user denied mic, the orb flips to MIC OFF.

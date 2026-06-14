@@ -1085,3 +1085,66 @@ same marketplace. The federation is visual diversity over shared
 substrate — exactly the §26 collective-substrate doctrine applied
 to identity, not just compute.
 
+## 31. The Drone Pilot — defender game as usage telemetry
+
+The architect ordered a **Drone Pilot** with its own orb that commands
+**300 drones** in a team-based defender game. The order names a dual
+purpose: **fun for users + usage data to improve the app.** Telemetry
+feeds `analytics_events` (RLS: anon insert, service-role read), which
+§19's `usage_stats` already surfaces on the develop panel — so the
+brain ranks priorities from how people actually play.
+
+**The DRONE orb.** Amber-tinted (matching the food/warm-action layer
+of §28), bottom-right above the pilot orb, draggable, position
+persisted as `astranov.orb.drone`. Glyph ✦. Label reads `DRONES` at
+rest, flips to `{swarm count} · WAVE {n}` while the game runs and
+pulses brighter (`live` class). Tap = open the command panel.
+
+**Solo mode (today).** `dronesStart(n)` spawns `n` (default 300)
+friendly drones in an orbiting ring around the player at 2–5 km
+radius, 0.5–1.6 km altitude. The camera flies to 25 km / −70° pitch
+for tactical view. Enemy waves arrive every 18 s, growing each round
+(`min(20 + wave×6, 90)`), from a random bearing 12–18 km out. Two
+commands: **PATROL** (drones orbit and intercept what reaches them)
+and **ATTACK** (drones hunt nearest foe at ~6 km/s). On contact
+within 100 m, friendly + foe both die. Foes that reach the player
+within 120 m do 5 HP damage. Game ends at HP ≤ 0 or swarm wiped
+after wave 2+.
+
+**Team-multiplayer mode (queued).** The architecture is laid for
+peer-vs-peer via a Supabase Realtime channel `drone:lobby-{id}`:
+each pilot broadcasts swarm centroid + commands; remote swarms render
+in violet vs amber. Not in v99 — the solo loop generates the usage
+signal the architect named first.
+
+**No fabrication carve-out (§11 reminder).** Drones are explicit
+game pieces, not real-world claims — the §11 NO FABRICATED rule
+applies to PEOPLE / PRICES / PHOTOS / DRIVERS, not to declared
+gameplay entities. The player orb shows the user's REAL GPS and
+display name; only the swarm is synthetic, and the panel says so.
+
+**Telemetry events (analytics_events).** Naming convention is
+`drone_game_<verb>`. Today's writers:
+- `drone_game_start`   props: `{ n, mode }`
+- `drone_game_wave`    props: `{ wave, n }`
+- `drone_game_command` props: `{ mode }`
+- `drone_game_end`     props: `{ reason, score, wave, durationMs }`
+
+All carry `session_id` (the per-device sid in `localStorage`) and an
+optional `uid` in props when signed in. Future writers across the
+app should match this `<surface>_<verb>` shape so §19's bar chart
+groups cleanly.
+
+**Chat shortcuts.** `drones`, `swarm`, `pilot drones`, `defend`,
+`σμήνος`, `πιλότος` open the panel. From an unstarted state the
+panel offers two presets: 300 drones (default) and 100 (lighter for
+weaker phones).
+
+**Honest gaps.** 600 entities (300 friendly + up to 300 foes) on a
+mid-range phone is the upper edge of what `viewer.entities` + per-
+entity `CallbackProperty` can hold at 60 fps. If the architect
+observes frame drops on low-end devices, the next cycle migrates the
+swarms to a `PointPrimitiveCollection` (single Cesium primitive
+with batched updates). Multiplayer is queued; combat is one-shot
+kill (no hp pool on drones) — both choices kept the v99 cycle
+shippable in one move.
